@@ -23,6 +23,17 @@ fn make_literal(token_type: Type) -> Node {
     }
 }
 
+fn make_unary(token_type: Type, child: Node) -> Node {
+    match token_type {
+        Type::Operator(op) => match op {
+            Operator::Bang => Node::NegationBang(Box::new(child)),
+            Operator::Minus => Node::NegationMinus(Box::new(child)),
+            _ => Node::Number(0), // TODO: error
+        },
+        _ => Node::Number(0), // TODO: Error
+    }
+}
+
 fn parse_literal(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
     if let Some(token) = tokens.next_if(|t| {
         t.is_types(vec![
@@ -35,6 +46,20 @@ fn parse_literal(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
         return make_literal(token.token_type);
     } else {
         exit(-1); // TODO: error
+    }
+}
+
+fn parse_unary(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
+    if let Some(token) = tokens.next_if(|t| {
+        t.is_types(vec![
+            Type::Operator(Operator::Bang),
+            Type::Operator(Operator::Minus),
+        ])
+    }) {
+        let rhs = parse_unary(tokens);
+        return make_unary(token.token_type, rhs);
+    } else {
+        return parse_literal(tokens);
     }
 }
 
@@ -75,6 +100,56 @@ mod tests {
                     .peekable()
             ),
             Node::String(String::from("meow"))
+        );
+    }
+
+    #[test]
+    fn test_unary() {
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Operator(Operator::Minus)),
+                    Token::new(Type::Number(3))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::NegationMinus(Box::new(Node::Number(3)))
+        );
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Operator(Operator::Bang)),
+                    Token::new(Type::Keyword(Keyword::False))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::NegationBang(Box::new(Node::Boolean(false)))
+        );
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Operator(Operator::Minus)),
+                    Token::new(Type::Operator(Operator::Minus)),
+                    Token::new(Type::Number(3))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::NegationMinus(Box::new(Node::NegationMinus(Box::new(Node::Number(3)))))
+        );
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Operator(Operator::Bang)),
+                    Token::new(Type::Operator(Operator::Bang)),
+                    Token::new(Type::Keyword(Keyword::True))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::NegationBang(Box::new(Node::NegationBang(Box::new(Node::Boolean(true)))))
         );
     }
 }
