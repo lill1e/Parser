@@ -36,12 +36,13 @@ fn make_unary(token_type: Type, child: Node) -> Node {
 
 fn parse_literal(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
     if let Some(token) = tokens.next_if(|t| {
-        t.is_types(vec![
-            Type::String(String::new()),
-            Type::Number(0),
-            Type::Keyword(Keyword::True),
-            Type::Keyword(Keyword::False),
-        ])
+        matches!(
+            t.token_type,
+            Type::String(_)
+                | Type::Number(_)
+                | Type::Keyword(Keyword::True)
+                | Type::Keyword(Keyword::False)
+        )
     }) {
         return make_literal(token.token_type);
     } else {
@@ -51,10 +52,10 @@ fn parse_literal(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
 
 fn parse_unary(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
     if let Some(token) = tokens.next_if(|t| {
-        t.is_types(vec![
-            Type::Operator(Operator::Bang),
-            Type::Operator(Operator::Minus),
-        ])
+        matches!(
+            t.token_type,
+            Type::Operator(Operator::Bang) | Type::Operator(Operator::Minus)
+        )
     }) {
         let rhs = parse_unary(tokens);
         return make_unary(token.token_type, rhs);
