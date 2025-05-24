@@ -3,6 +3,7 @@ use std::{iter::Peekable, process::exit, vec::IntoIter};
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
+    Null,
     String(String),
     Number(u32),
     Boolean(bool),
@@ -16,9 +17,10 @@ fn make_literal(token_type: Type) -> Node {
     match token_type {
         Type::String(s) => Node::String(s),
         Type::Number(n) => Node::Number(n),
-        Type::Keyword(k) if k == Keyword::True || k == Keyword::False => {
-            Node::Boolean(k == Keyword::True)
-        }
+        Type::Keyword(k) => match k {
+            Keyword::True | Keyword::False => Node::Boolean(k == Keyword::True),
+            Keyword::Null => Node::Null,
+            _ => Node::Number(0),
         _ => Node::Number(0),
     }
 }
@@ -42,6 +44,7 @@ fn parse_literal(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
                 | Type::Number(_)
                 | Type::Keyword(Keyword::True)
                 | Type::Keyword(Keyword::False)
+                | Type::Keyword(Keyword::Null)
         )
     }) {
         return make_literal(token.token_type);
