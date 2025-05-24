@@ -8,7 +8,7 @@ pub enum Node {
     Number(u32),
     Boolean(bool),
     NegationBang(Box<Node>),
-    NegationMinus(Box<Node>), // Grouping(Node),
+    NegationMinus(Box<Node>),
     Multiply(Box<Node>, Box<Node>),
     Divide(Box<Node>, Box<Node>),
 }
@@ -45,9 +45,20 @@ fn parse_literal(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
                 | Type::Keyword(Keyword::True)
                 | Type::Keyword(Keyword::False)
                 | Type::Keyword(Keyword::Null)
+                | Type::LeftParen
         )
     }) {
-        return make_literal(token.token_type);
+        match token.token_type {
+            Type::LeftParen => {
+                let inner = parse_expr(tokens);
+                if let Some(_) = tokens.next_if(|t| matches!(t.token_type, Type::RightParen)) {
+                    return inner;
+                } else {
+                    exit(-1); // TODO: Error
+                }
+            }
+            _ => return make_literal(token.token_type),
+        }
     } else {
         exit(-1); // TODO: error
     }
