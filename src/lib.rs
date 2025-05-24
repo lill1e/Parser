@@ -9,8 +9,16 @@ pub enum Node {
     Boolean(bool),
     NegationBang(Box<Node>),
     NegationMinus(Box<Node>),
+    Add(Box<Node>, Box<Node>),
+    Subtract(Box<Node>, Box<Node>),
     Multiply(Box<Node>, Box<Node>),
     Divide(Box<Node>, Box<Node>),
+    Greater(Box<Node>, Box<Node>),
+    GreaterEq(Box<Node>, Box<Node>),
+    Less(Box<Node>, Box<Node>),
+    LessEq(Box<Node>, Box<Node>),
+    Equals(Box<Node>, Box<Node>),
+    NotEquals(Box<Node>, Box<Node>),
 }
 
 fn make_literal(token_type: Type) -> Node {
@@ -30,6 +38,25 @@ fn make_unary(token_type: Type, child: Node) -> Node {
         Type::Operator(op) => match op {
             Operator::Bang => Node::NegationBang(Box::new(child)),
             Operator::Minus => Node::NegationMinus(Box::new(child)),
+            _ => Node::Number(0), // TODO: error
+        },
+        _ => Node::Number(0), // TODO: Error
+    }
+}
+
+fn make_binary(token_type: Type, lhs: Node, rhs: Node) -> Node {
+    match token_type {
+        Type::Operator(op) => match op {
+            Operator::Plus => Node::Add(Box::new(lhs), Box::new(rhs)),
+            Operator::Minus => Node::Subtract(Box::new(lhs), Box::new(rhs)),
+            Operator::Star => Node::Multiply(Box::new(lhs), Box::new(rhs)),
+            Operator::Slash => Node::Divide(Box::new(lhs), Box::new(rhs)),
+            Operator::Greater => Node::Greater(Box::new(lhs), Box::new(rhs)),
+            Operator::GreaterEqual => Node::GreaterEq(Box::new(lhs), Box::new(rhs)),
+            Operator::Less => Node::Less(Box::new(lhs), Box::new(rhs)),
+            Operator::LessEqual => Node::LessEq(Box::new(lhs), Box::new(rhs)),
+            Operator::DoubleEquals => Node::Equals(Box::new(lhs), Box::new(rhs)),
+            Operator::NotEquals => Node::NotEquals(Box::new(lhs), Box::new(rhs)),
             _ => Node::Number(0), // TODO: error
         },
         _ => Node::Number(0), // TODO: Error
@@ -78,8 +105,67 @@ fn parse_unary(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
     }
 }
 
-fn parse_expr(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
-    return parse_bin_multdiv(tokens);
+fn parse_bin_multdiv(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
+    let mut lhs = parse_unary(tokens);
+    while let Some(token) = tokens.next_if(|t| {
+        matches!(
+            t.token_type,
+            Type::Operator(Operator::Star) | Type::Operator(Operator::Slash)
+        )
+    }) {
+        let rhs = parse_unary(tokens);
+        lhs = make_binary(token.token_type, lhs, rhs);
+    }
+    return lhs;
+}
+
+fn parse_bin_addsub(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
+    let mut lhs = parse_bin_multdiv(tokens);
+    while let Some(token) = tokens.next_if(|t| {
+        matches!(
+            t.token_type,
+            Type::Operator(Operator::Plus) | Type::Operator(Operator::Minus)
+        )
+    }) {
+        let rhs = parse_bin_multdiv(tokens);
+        lhs = make_binary(token.token_type, lhs, rhs);
+    }
+    return lhs;
+}
+
+fn parse_bin_comp(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
+    let mut lhs = parse_bin_addsub(tokens);
+    while let Some(token) = tokens.next_if(|t| {
+        matches!(
+            t.token_type,
+            Type::Operator(Operator::Greater)
+                | Type::Operator(Operator::GreaterEqual)
+                | Type::Operator(Operator::Less)
+                | Type::Operator(Operator::LessEqual)
+        )
+    }) {
+        let rhs = parse_bin_addsub(tokens);
+        lhs = make_binary(token.token_type, lhs, rhs);
+    }
+    return lhs;
+}
+
+fn parse_bin_eq(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
+    let mut lhs = parse_bin_comp(tokens);
+    while let Some(token) = tokens.next_if(|t| {
+        matches!(
+            t.token_type,
+            Type::Operator(Operator::DoubleEquals) | Type::Operator(Operator::NotEquals)
+        )
+    }) {
+        let rhs = parse_bin_comp(tokens);
+        lhs = make_binary(token.token_type, lhs, rhs);
+    }
+    return lhs;
+}
+
+pub fn parse_expr(tokens: &mut Peekable<IntoIter<Token>>) -> Node {
+    return parse_bin_eq(tokens);
 }
 
 #[cfg(test)]
