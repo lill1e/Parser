@@ -253,4 +253,124 @@ mod tests {
             Node::NegationBang(Box::new(Node::NegationBang(Box::new(Node::Boolean(true)))))
         );
     }
+
+    #[test]
+    fn test_binary() {
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Number(4)),
+                    Token::new(Type::Operator(Operator::Star)),
+                    Token::new(Type::Number(4))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::Multiply(Box::new(Node::Number(4)), Box::new(Node::Number(4)))
+        );
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Number(8)),
+                    Token::new(Type::Operator(Operator::Star)),
+                    Token::new(Type::Number(8)),
+                    Token::new(Type::Operator(Operator::Star)),
+                    Token::new(Type::Number(4)),
+                    Token::new(Type::Operator(Operator::Star)),
+                    Token::new(Type::Number(4))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::Multiply(
+                Box::new(Node::Multiply(
+                    Box::new(Node::Multiply(
+                        Box::new(Node::Number(8)),
+                        Box::new(Node::Number(8))
+                    )),
+                    Box::new(Node::Number(4))
+                )),
+                Box::new(Node::Number(4))
+            )
+        );
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Number(6)),
+                    Token::new(Type::Operator(Operator::Slash)),
+                    Token::new(Type::Number(3)),
+                    Token::new(Type::Operator(Operator::Plus)),
+                    Token::new(Type::Number(1))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::Add(
+                Box::new(Node::Divide(
+                    Box::new(Node::Number(6)),
+                    Box::new(Node::Number(3))
+                )),
+                Box::new(Node::Number(1)),
+            )
+        );
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Number(5)),
+                    Token::new(Type::Operator(Operator::Star)),
+                    Token::new(Type::Number(3)),
+                    Token::new(Type::Operator(Operator::Plus)),
+                    Token::new(Type::Number(3)),
+                    Token::new(Type::Operator(Operator::Star)),
+                    Token::new(Type::Number(3)),
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::Add(
+                Box::new(Node::Multiply(
+                    Box::new(Node::Number(5)),
+                    Box::new(Node::Number(3))
+                )),
+                Box::new(Node::Multiply(
+                    Box::new(Node::Number(3)),
+                    Box::new(Node::Number(3))
+                ))
+            )
+        );
+        assert_eq!(
+            parse_expr(
+                &mut vec![
+                    Token::new(Type::Number(5)),
+                    Token::new(Type::Operator(Operator::Plus)),
+                    Token::new(Type::Operator(Operator::Minus)),
+                    Token::new(Type::Number(4))
+                ]
+                .into_iter()
+                .peekable()
+            ),
+            Node::Add(
+                Box::new(Node::Number(5)),
+                Box::new(Node::NegationMinus(Box::new(Node::Number(4))))
+            )
+        );
+    }
+
+    #[test]
+    fn test() {
+        let mut data = vec![
+            Token::new(Type::Number(5)),
+            Token::new(Type::Operator(Operator::Star)),
+            Token::new(Type::LeftParen),
+            Token::new(Type::Number(3)),
+            Token::new(Type::Operator(Operator::Plus)),
+            Token::new(Type::Number(3)),
+            Token::new(Type::RightParen),
+            Token::new(Type::Operator(Operator::Star)),
+            Token::new(Type::Number(3)),
+        ]
+        .into_iter()
+        .peekable();
+        dbg!(parse_expr(&mut data));
+    }
 }
