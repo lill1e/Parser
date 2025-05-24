@@ -1,5 +1,5 @@
 use lexer::{Keyword, Operator, Token, Type};
-use std::{iter::Peekable, mem, process::exit, vec::IntoIter};
+use std::{iter::Peekable, process::exit, vec::IntoIter};
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
