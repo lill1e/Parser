@@ -29,6 +29,7 @@ fn make_literal(token_type: Type) -> Node {
             Keyword::True | Keyword::False => Node::Boolean(k == Keyword::True),
             Keyword::Null => Node::Null,
             _ => Node::Number(0),
+        },
         _ => Node::Number(0),
     }
 }
