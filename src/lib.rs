@@ -5,7 +5,7 @@ use std::{iter::Peekable, process::exit, vec::IntoIter};
 pub enum Node {
     Null,
     String(String),
-    Number(i64),
+    Number(i32),
     Boolean(bool),
     NegationBang(Box<Node>),
     NegationMinus(Box<Node>),
